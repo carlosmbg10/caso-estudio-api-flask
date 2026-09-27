@@ -1,0 +1,1 @@
+node_modules/ , __pycache__/ , *.pyc , cypress/videos/ , cypress/screenshots/ , resultados*.csv , .vscode/

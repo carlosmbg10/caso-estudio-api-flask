@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Microservicio de utilidades - Portal RH</title>
+<style>
+  body {
+    font-family: Arial, Helvetica, sans-serif;
+    max-width: 640px;
+    margin: 40px auto;
+    padding: 0 20px;
+    color: #222;
+  }
+  h1 {
+    font-size: 22px;
+  }
+  fieldset {
+    margin-bottom: 28px;
+    padding: 16px 20px;
+    border-radius: 8px;
+    border: 1px solid #ccc;
+  }
+  legend {
+    font-weight: bold;
+    padding: 0 6px;
+  }
+  label {
+    display: block;
+    margin-top: 10px;
+    font-size: 14px;
+  }
+  input {
+    width: 100%;
+    padding: 8px;
+    margin-top: 4px;
+    box-sizing: border-box;
+    border: 1px solid #aaa;
+    border-radius: 4px;
+  }
+  button {
+    margin-top: 14px;
+    padding: 8px 16px;
+    border: none;
+    border-radius: 4px;
+    background: #1d6f56;
+    color: white;
+    cursor: pointer;
+  }
+  button:hover {
+    background: #145240;
+  }
+  .resultado {
+    margin-top: 12px;
+    padding: 10px;
+    border-radius: 4px;
+    font-size: 14px;
+    display: none;
+  }
+  .resultado.exito {
+    display: block;
+    background: #e1f5ee;
+    color: #085041;
+    border: 1px solid #5dcaa5;
+  }
+  .resultado.error {
+    display: block;
+    background: #fcebeb;
+    color: #791f1f;
+    border: 1px solid #f09595;
+  }
+</style>
+</head>
+<body>
+
+<h1>Microservicio de utilidades - Portal RH</h1>
+
+<!-- Formulario 1: nombre y apellido -->
+<fieldset>
+  <legend>Registrar nombre completo</legend>
+  <form id="form-persona">
+    <label for="nombre">Nombre</label>
+    <input type="text" id="nombre" name="nombre">
+
+    <label for="apellido">Apellido</label>
+    <input type="text" id="apellido" name="apellido">
+
+    <button type="submit">Registrar</button>
+  </form>
+  <div id="resultado-persona" class="resultado"></div>
+</fieldset>
+
+<!-- Formulario 2: salario -->
+<fieldset>
+  <legend>Calcular salario neto</legend>
+  <form id="form-salario">
+    <label for="salario">Salario bruto</label>
+    <input type="number" id="salario" name="salario" step="any">
+
+    <button type="submit">Calcular</button>
+  </form>
+  <div id="resultado-salario" class="resultado"></div>
+</fieldset>
+
+<!-- Formulario 3: fecha de nacimiento -->
+<fieldset>
+  <legend>Calcular edad</legend>
+  <form id="form-edad">
+    <label for="fecha_nacimiento">Fecha de nacimiento</label>
+    <input type="date" id="fecha_nacimiento" name="fecha_nacimiento">
+
+    <button type="submit">Calcular edad</button>
+  </form>
+  <div id="resultado-edad" class="resultado"></div>
+</fieldset>
+
+<script>
+  const API_BASE = "http://127.0.0.1:5000";
+
+  function mostrarResultado(el, mensaje, esExito) {
+    el.textContent = mensaje;
+    el.classList.remove("exito", "error");
+    el.classList.add(esExito ? "exito" : "error");
+  }
+
+  // ---- Formulario 1: persona ----
+  document.getElementById("form-persona").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const nombre = document.getElementById("nombre").value;
+    const apellido = document.getElementById("apellido").value;
+    const el = document.getElementById("resultado-persona");
+
+    try {
+      const resp = await fetch(`${API_BASE}/api/persona`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ nombre, apellido })
+      });
+      const data = await resp.json();
+      if (resp.ok) {
+        mostrarResultado(el, `Nombre completo: ${data.nombre_completo}`, true);
+      } else {
+        mostrarResultado(el, data.error || "Error desconocido", false);
+      }
+    } catch (err) {
+      mostrarResultado(el, "No se pudo conectar con la API.", false);
+    }
+  });
+
+  // ---- Formulario 2: salario ----
+  document.getElementById("form-salario").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const salario = document.getElementById("salario").value;
+    const el = document.getElementById("resultado-salario");
+
+    try {
+      const resp = await fetch(`${API_BASE}/api/salario`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ salario })
+      });
+      const data = await resp.json();
+      if (resp.ok) {
+        mostrarResultado(
+          el,
+          `Salario neto: ${data.salario_neto} (descuento del ${data.porcentaje_descuento}%: ${data.descuento})`,
+          true
+        );
+      } else {
+        mostrarResultado(el, data.error || "Error desconocido", false);
+      }
+    } catch (err) {
+      mostrarResultado(el, "No se pudo conectar con la API.", false);
+    }
+  });
+
+  // ---- Formulario 3: edad ----
+  document.getElementById("form-edad").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const fecha = document.getElementById("fecha_nacimiento").value;
+    const el = document.getElementById("resultado-edad");
+
+    try {
+      const resp = await fetch(`${API_BASE}/api/edad?fecha_nacimiento=${encodeURIComponent(fecha)}`);
+      const data = await resp.json();
+      if (resp.ok) {
+        mostrarResultado(el, `Edad calculada: ${data.edad} años`, true);
+      } else {
+        mostrarResultado(el, data.error || "Error desconocido", false);
+      }
+    } catch (err) {
+      mostrarResultado(el, "No se pudo conectar con la API.", false);
+    }
+  });
+</script>
+
+</body>
+</html>
